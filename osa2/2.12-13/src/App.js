@@ -37,8 +37,10 @@ class App extends React.Component {
         <CountriesToShow
           countries={this.state.countries}
           filter={this.state.filter}
+          handleFilterChange={this.handleFilterChange}
         />
       </div>
+
     );
   }
 }
@@ -56,7 +58,7 @@ const Kentta = (props) => {
   )
 }
 
-const CountriesToShow = ({ countries, filter }) => {
+const CountriesToShow = ({ countries, filter, handleFilterChange }) => {
 
   const countriesToShow =
     countries.filter(country => country.name.toUpperCase().includes(filter.toUpperCase()))
@@ -76,7 +78,7 @@ const CountriesToShow = ({ countries, filter }) => {
       <div>
         <ul>
           {countriesToShow.map(country =>
-            <CountryList key={country.name} country={country} />)}
+            <CountryList key={country.name} country={country} filter={handleFilterChange} />)}
         </ul>
       </div>
     )
@@ -94,10 +96,20 @@ const Country = ({ country }) => {
   )
 }
 
-const CountryList = ({ country }) => {
+const CountryList = ({ country, filter}) => {
+
+  const handleClick = (props) => {
+    country.target = []
+    country.target.value = country.name
+    filter(country)
+    
+  }
+
   return (
-    <div onClick={console.log('jee')}>
+    <div>
+      <li onClick={handleClick}>
       {country.name}
+      </li>
     </div>
   )
 }
