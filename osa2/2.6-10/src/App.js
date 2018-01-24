@@ -1,19 +1,26 @@
+
 import React from 'react';
+import axios from 'axios'
 
 class App extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      persons: [
-        {
-          name: 'Arto Hellas',
-          number: '040-50560'
-        }
-      ],
+      persons: [],
       newName: '',
       newNumber: '',
       filter: ''
     }
+  }
+
+  componentWillMount() {
+    console.log('will mount')
+    axios
+      .get('http://localhost:3001/persons')
+      .then(response => {
+        console.log('promise fulfilled')
+        this.setState({ persons: response.data })
+      })
   }
 
   addPerson = (event) => {
@@ -64,7 +71,7 @@ class App extends React.Component {
   render() {
 
     const personsToShow =
-      this.state.persons.filter(person => person.name.toUpperCase().includes(this.state.filter.toUpperCase))
+      this.state.persons.filter(person => person.name.toUpperCase().includes(this.state.filter.toUpperCase()))
 
 
     return (
