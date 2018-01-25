@@ -1,6 +1,6 @@
-
 import React from 'react';
-import axios from 'axios'
+import personService from './services/persons'
+import './index.css'
 
 class App extends React.Component {
   constructor(props) {
@@ -9,17 +9,57 @@ class App extends React.Component {
       persons: [],
       newName: '',
       newNumber: '',
-      filter: ''
+      filter: '',
+      message: '',
+      error: ''
     }
   }
 
   componentWillMount() {
     console.log('will mount')
-    axios
-      .get('http://localhost:3001/persons')
+    personService
+      .getAll()
       .then(response => {
-        console.log('promise fulfilled')
         this.setState({ persons: response.data })
+      })
+  }
+
+  ajastin() {
+    return (
+      setTimeout(() => {
+        this.setState({ error: '' })
+      }, 5000)
+    )
+  }
+
+  deletePerson = (person) => () => {
+
+    if (window.confirm("Poistetaanko ?") === false) {
+      return;
+    }
+
+    console.log('lollll')
+    personService
+      .deletePerson(person.id)
+      .then(response => {
+        console.log('viesti')
+        this.setState({
+          persons: this.state.persons.filter(personss => person.id !== personss.id),
+          newName: '',
+          newNumber: '',
+          filter: ''
+        })
+        this.setState({
+          message: 'poistettu',
+          error: 'success'
+        })
+        this.ajastin()
+      })
+      .catch(error => {
+        this.setState({
+          message: 'nimi on jo poistettu!!',
+          error: 'error'
+        })
       })
   }
 
@@ -29,40 +69,76 @@ class App extends React.Component {
 
     const newName = this.state.newName
     var x = false
+    let potential = ''
 
     this.state.persons.forEach(function (item, index, array) {
-      console.log(item, index);
       if (item.name.toUpperCase() === newName.toUpperCase()) {
-        console.log('jaaahas')
+
         x = true
+        potential = item
       }
+
     });
-
-
     if (x === false) {
-      console.log(this.state.persons.indexOf(this.state.newName))
       const personObject = {
         name: this.state.newName,
         number: this.state.newNumber
       }
 
-      const persons = this.state.persons.concat(personObject)
+      personService
+        .create(personObject)
+        .then(response => {
+          this.setState({
+            persons: this.state.persons.concat(response.data),
+            newName: '',
+            newNumber: ''
+          })
+          this.setState({
+            message: 'Uusi nimi luotu',
+            error: 'success'
+          })
+        })
+        .catch(error => {
+          this.setState({
+            message: 'nimi on jo poistettu!!',
+            error: 'error'
+          })
+        })
+      this.ajastin()
+    } else {
+      if (window.confirm(this.state.newName + " on jo luettelossa, korvataanko vanha numero uudella?") === false) {
+        return;
+      }
+      console.log(potential)
+      const update = { ...potential, number: this.state.newNumber }
+      console.log('hmm')
+      personService
+        .update(potential.id, update)
+        .then(response => {
+          const persons = this.state.persons.filter(n => n.id !== potential.id)
+          this.setState({
+            persons: persons.concat(update),
+            newName: '',
+            newNumber: ''
+          })
+          this.ajastin()
+        })
+        .catch(error => {
+          this.setState({
+            message: 'nimi on jo poistettu!!',
+            error: 'error'
+          })
+        })
 
-      this.setState({
-        persons: persons,
-        newName: '',
-        newNumber: ''
-      })
     }
+
   }
 
   handlePersonChange = (event) => {
     this.setState({ newName: event.target.value })
   }
 
-  handleNumberChange = (event) => {
-    this.setState({ newNumber: event.target.value })
-  }
+
 
   handeFilterChange = (event) => {
     this.setState({ filter: event.target.value })
@@ -71,11 +147,13 @@ class App extends React.Component {
   render() {
 
     const personsToShow =
-      this.state.persons.filter(person => person.name.toUpperCase().includes(this.state.filter.toUpperCase()))
-
+      this.state.persons.filter(person =>
+        person.name.toUpperCase().includes(this.state.filter.toUpperCase())
+      )
 
     return (
       <div>
+        <Notification message={this.state.message} current={this.state.error} />
         <h2>Puhelinluettelo</h2>
 
         <div>
@@ -97,8 +175,7 @@ class App extends React.Component {
             />
           </div>
           <div>
-
-            numero <input
+            numero: <input
               value={this.state.newNumber}
               onChange={this.handleNumberChange}
             />
@@ -109,21 +186,41 @@ class App extends React.Component {
         </form>
         <h2>Numerot</h2>
         <ul>
-          {personsToShow.map(person => <Person key={person.name} person={person} />)}
+          {personsToShow.map(person =>
+            <Person key={person.name} person={person} deletePerson={this.deletePerson} />
+          )}
+
         </ul>
       </div>
     )
   }
 }
 
-
-
-
-const Person = ({ person }) => {
+const Person = ({ person, deletePerson }) => {
   return (
-    <li>{person.name} {person.number}</li>
+    <li>{person.name} {person.number} <button onClick={deletePerson(person)}>poista</button></li>
   )
 }
+
+const Notification = ({ current, message }) => {
+  if (current === '') {
+    return null
+  }
+  if (current === 'error') {
+    return (
+      <div className="error">
+        {message}
+      </div>
+    )
+  } else {
+    return (
+      <div className="success">
+        {message}
+      </div>
+    )
+  }
+}
+
 
 
 export default App
